@@ -8,7 +8,7 @@ from .unprojection import reproject
 from .eyefitter import SingleEyeFitter
 from .utils import save_json, load_json, convert_vec2angle31
 from .visualisation import draw_circle, draw_ellipse, draw_line, VideoManager
-
+import time
 
 class gaze_inferer(object):
     def __init__(self, model, flen, ori_video_shape, sensor_size, infer_gaze_flag=True):
@@ -50,6 +50,7 @@ class gaze_inferer(object):
                                          pupil_radius=2 * self.mm2px_scaling,
                                          initial_eye_z=50 * self.mm2px_scaling)
         self.infer_gaze_flag = infer_gaze_flag
+        self.start = 0
     def process(self, video_src, mode, output_record_path="", batch_size=32,
                 output_video_path="", heatmap=False, print_prefix=""):
         """
@@ -106,7 +107,9 @@ class gaze_inferer(object):
 
             #print("\r%s%s %s (%d/%d)" % (print_prefix, mode, video_name_root + ext, idx + 1, vid_m), end="", flush=True)
 
+            
             frame_preprocessed = self._preprocess_image(frame, shape_correct)
+            print(frame[:1:1])
             mini_batch_idx = idx % batch_size
 
             # Before reaching the batch size, stack the array
@@ -127,11 +130,12 @@ class gaze_inferer(object):
                 #print("st")
                 
                 #self.model.invoke()
-                print(X_batch.shape)
+                #print(X_batch.shape)
                 #Y_batch = self.model.get_tensor(output_details[0]['index'])
 
-                
+                self.start = time.perf_counter()
                 Y_batch = self.model.predict(X_batch)
+                print("elaps: ", time.perf_counter()-self.start)
                 if mode == "Fit":
                     self._fitting_batch(X_batch=X_batch,
                                         Y_batch=Y_batch)
@@ -143,7 +147,7 @@ class gaze_inferer(object):
                 # Renew X_batch for next batch
                 X_batch = np.zeros((batch_size, 240, 320, 3), dtype=np.float16)
                 X_batch[mini_batch_idx, :, :, :] = frame_preprocessed
-                
+                #print("elaps: ", time.perf_counter()-self.start)
 
             # Within the final batch but not yet reaching the last index, stack the array
             elif (idx > final_batch_idx) and (idx != final_frame - 1):
@@ -269,7 +273,7 @@ class gaze_inferer(object):
                 self.vid_manager.write_results(frame_id=frame, pupil2D_x=centre[0], pupil2D_y=centre[1], gaze_x=x,
                                                gaze_y=y, confidence=ellipse_confidence, consistence=consistence)
 
-                #print("\r(%d - %d,%d,%d,%d - conf=%d, cons=%d)" % (frame, x, y, centre[0], centre[1], ellipse_confidence, consistence), end="", flush=True)
+                print("\r(%d - %d,%d,%d,%d - conf=%d, cons=%d)" % (frame, x, y, centre[0], centre[1], ellipse_confidence, consistence), end="", flush=True)
                 if self.vid_manager.output_video_flag:
                     # # Code below is for drawing video
                     ellipse_centre_np = np.array(centre)
@@ -306,6 +310,7 @@ class gaze_inferer(object):
                 # If ellipse cannot be found, fill the outputs with None's
                 positions, gaze_angles, inference_confidence = None, None, None
 
+                print("None")
                 self.vid_manager.write_results(frame_id=frame, pupil2D_x=np.nan, pupil2D_y=np.nan, gaze_x=np.nan,
                                                gaze_y=np.nan, confidence=np.nan, consistence=np.nan)
 
@@ -359,11 +364,12 @@ class gaze_inferer(object):
         Returns:
             output_img (numpy array): processed grayscale image with shape ( 240, 320, 1) and values float [0,1]
         """
-        output_img = np.zeros((240, 320, 1))
+        output_img = np.zeros((240, 320, 1), dtype=np.float16)
         img = img / 255
         img = rgb2gray(img)
         if not shape_correct:
             img = resize(img, (240, 320))
+        
         output_img[:, :, :] = img.reshape(240, 320, 1)
         return output_img
 
