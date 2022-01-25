@@ -128,8 +128,8 @@ inferer.load_eyeball_model("demo_model.json")
 Demo video is located at [demo](demo). After installing DeepVOG, you can move to that directory and run the following commands:
 
 ```
-$ python -m deepvog --fit ./demo.mp4 ./demo_eyeball_model.json -v ./demo_visualization_fitting.mp4 -m -b 256
-$ python -m deepvog --infer ./demo.mp4 ./demo_eyeball_model.json ./demo_gaze_results.csv -b 32 -v ./demo_visualization_inference.mp4 -m
+$ python -m deepvog --fit ./demo/demo.mp4 ./demo/demo_eyeball_model.json -v ./demo/demo_visualization_fitting.mp4 -m -b 256
+$ python -m deepvog --infer ./demo/demo.mp4 ./demo/demo_eyeball_model.json ./demo/demo_gaze_results.csv -b 32 -v ./demo/demo_visualization_inference.mp4 -m
 ```
 
 The -v argument draws the visualization of fitted ellipse and gaze vector to a designated video. The -m argument draws the segmented heatmap of pupil side by side. The -b argument controls the batch size. For more details of arguments, see [doc/documentation.md](doc/documentation.md).
